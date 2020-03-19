@@ -1,0 +1,28 @@
+image: "docker:stable"
+
+services:
+- docker:stable-dind
+
+variables:
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
+
+before_script:
+- docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+- docker login -u $DOCKER_HUB_REGISTRY_USER -p $DOCKER_HUB_REGISTRY_PASSWORD $DOCKER_HUB_REGISTRY
+
+build:runtime:
+  stage: build
+  script:
+  - docker build --pull -f=runtime.Dockerfile -t $CI_REGISTRY/salfurium/arch_qt:runtime salfurium/arch_qt:runtime .
+  - docker push $CI_REGISTRY/salfurium/arch_qt:runtime
+  - docker push salfurium/arch_qt:runtime
+
+build:build:
+  stage: build
+  dependencies:
+  - build:runtime
+  script:
+  - docker build --pull -f=build.Dockerfile -t $CI_REGISTRY/salfurium/arch_qt:build $CI_REGISTRY/salfurium/arch_qt:latest salfurium/arch_qt:build salfurium/arch_qt:latest .
+  - docker push $CI_REGISTRY/salfurium/arch_qt:build
+  - docker push salfurium/arch_qt:build
